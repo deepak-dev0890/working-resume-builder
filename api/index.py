@@ -1,114 +1,130 @@
-import os
 import io
 import json
-import uuid
 from http.server import BaseHTTPRequestHandler
 from docx import Document
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
+
+from http.server import BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+from io import BytesIO
+from reportlab.pdfgen import canvas
+from docx import Document
+
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        try:
+            # Parse query params: ?type=pdf or ?type=docx
+            query = parse_qs(urlparse(self.path).query)
+            file_type = query.get("type", ["pdf"])[0].lower()
+
+            if file_type == "pdf":
+                buffer = BytesIO()
+                p = canvas.Canvas(buffer)
+                p.drawString(100, 750, "Hello, this is your resume!")
+                p.showPage()
+                p.save()
+                data = buffer.getvalue()
+                content_type = "application/pdf"
+                filename = "resume.pdf"
+
+            elif file_type == "docx":
+                doc = Document()
+                doc.add_heading("Resume", 0)
+                doc.add_paragraph("Hello, this is your resume in DOCX format!")
+                buffer = BytesIO()
+                doc.save(buffer)
+                data = buffer.getvalue()
+                content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                filename = "resume.docx"
+
+            else:
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b"Invalid file type")
+                return
+
+            # Send file to browser
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self.end_headers()
+            self.wfile.write(data)
+
+        except Exception as e:
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(str(e).encode())
 
 # This is the Vercel Serverless Function Handler
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        # --- Read and parse incoming data ---
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        data = json.loads(post_data)
-
-        # --- Basic variables ---
-        file_format = data.get('format', 'docx') # Default to docx
-        user_name = data.get('name', 'resume')
-        unique_id = uuid.uuid4()
-        
-        file_path = ""
-        content_type = ""
-        download_name = ""
-
         try:
-            # --- GENERATE PDF ---
-            if file_format == 'pdf':
-                content_type = 'application/pdf'
-                download_name = f"Resume - {user_name}.pdf"
-                file_path = f"/tmp/{unique_id}.pdf"
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data)
 
-                doc = SimpleDocTemplate(file_path)
-                styles = getSampleStyleSheet()
-                story = []
+            # --- Create a new Word document in memory ---
+            doc = Document()
+            
+            # --- Helper function for safe string conversion ---
+            def s(text): return str(text) if text is not None else ""
+            
+            # --- Populate the Document ---
+            doc.add_heading(s(data.get('name')), 0)
+            p = doc.add_paragraph()
+            p.add_run(s(data.get('email'))).bold = True
+            p.add_run(' | ')
+            p.add_run(s(data.get('phone'))).bold = True
+            p.add_run(' | ')
+            p.add_run(s(data.get('linkedin')))
 
-                # Add content to PDF story
-                story.append(Paragraph(data.get('name', ''), styles['h1']))
-                contact_info = f"{data.get('email', '')} | {data.get('phone', '')} | {data.get('linkedin', '')}"
-                story.append(Paragraph(contact_info, styles['Normal']))
-                story.append(Spacer(1, 0.2*inch))
+            if data.get('summary'):
+                doc.add_heading('Professional Summary', level=1)
+                doc.add_paragraph(s(data.get('summary')))
 
-                if data.get('summary'):
-                    story.append(Paragraph("Summary", styles['h2']))
-                    story.append(Paragraph(data.get('summary'), styles['BodyText']))
-                    story.append(Spacer(1, 0.2*inch))
-
-                if data.get('workExperiences'):
-                    story.append(Paragraph("Work Experience", styles['h2']))
-                    for job in data.get('workExperiences', []):
-                        story.append(Paragraph(f"<b>{job.get('jobTitle', '')}</b> at {job.get('company', '')}", styles['h3']))
-                        date_to = 'Present' if job.get('isPresent') else job.get('dateTo', '')
-                        story.append(Paragraph(f"<i>{job.get('dateFrom', '')} - {date_to}</i>", styles['Normal']))
-                        for line in job.get('jobDescription', '').split('\n'):
-                            story.append(Paragraph(f"• {line.strip()}", styles['BodyText']))
-                        story.append(Spacer(1, 0.1*inch))
-                # (Add similar blocks for Education and Skills)
-                doc.build(story)
-
-            # --- GENERATE DOCX ---
-            else: # Default to docx
-                content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                download_name = f"Resume - {user_name}.docx"
-                file_path = f"/tmp/{unique_id}.docx"
-                
-                doc = Document()
-                doc.add_heading(data.get('name', ''), 0)
-                doc.add_paragraph(f"{data.get('email', '')} | {data.get('phone', '')} | {data.get('linkedin', '')}")
-
-                if data.get('summary'):
-                    doc.add_heading('Professional Summary', level=1)
-                    doc.add_paragraph(data.get('summary'))
-                
-                if data.get('workExperiences'):
-                    doc.add_heading('Work Experience', level=1)
-                    for job in data.get('workExperiences', []):
-                        if job.get('jobTitle'):
-                            doc.add_paragraph(f"{job.get('jobTitle', '')} at {job.get('company', '')}", style='Intense Quote')
-                            date_to = 'Present' if job.get('isPresent') else job.get('dateTo', '')
-                            doc.add_paragraph(f"{job.get('dateFrom', '')} - {date_to}")
-                            for line in job.get('jobDescription', '').split('\n'):
-                                if line.strip():
-                                    doc.add_paragraph(line.strip(), style='List Bullet')
-
-                # (Add similar blocks for Education and Skills)
-                doc.save(file_path)
-
-            # --- Read the generated file from /tmp ---
-            with open(file_path, 'rb') as f:
-                file_bytes = f.read()
+            if data.get('workExperiences'):
+                doc.add_heading('Work Experience', level=1)
+                for job in data.get('workExperiences', []):
+                    if job.get('jobTitle'):
+                        doc.add_paragraph(f"{s(job.get('jobTitle'))} at {s(job.get('company'))}", style='Intense Quote')
+                        date_to = 'Present' if job.get('isPresent') else s(job.get('dateTo'))
+                        doc.add_paragraph(f"{s(job.get('dateFrom'))} - {date_to}")
+                        for line in s(job.get('jobDescription')).split('\n'):
+                            if line.strip():
+                                doc.add_paragraph(line.strip(), style='List Bullet')
+            
+            if data.get('educations'):
+                doc.add_heading('Education', level=1)
+                for edu in data.get('educations', []):
+                     if edu.get('degree'):
+                        doc.add_paragraph(f"{s(edu.get('degree'))} at {s(edu.get('school'))}", style='Intense Quote')
+                        date_to = 'Present' if edu.get('isPresent') else s(edu.get('dateTo'))
+                        doc.add_paragraph(f"{s(edu.get('dateFrom'))} - {date_to}")
+            
+            if data.get('skills'):
+                doc.add_heading('Skills', level=1)
+                skills_list = [skill.strip() for skill in s(data.get('skills')).split(',') if skill.strip()]
+                for skill in skills_list:
+                    doc.add_paragraph(skill, style='List Bullet')
+            
+            # --- Save the document to an in-memory stream ---
+            file_stream = io.BytesIO()
+            doc.save(file_stream)
+            file_stream.seek(0)
+            doc_bytes = file_stream.read()
 
             # --- Send the file back to the user ---
             self.send_response(200)
-            self.send_header('Content-Type', content_type)
-            self.send_header('Content-Disposition', f'attachment; filename="{download_name}"')
+            self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            self.send_header('Content-Disposition', f'attachment; filename="Resume - {s(data.get("name"))}.docx"')
             self.end_headers()
-            self.wfile.write(file_bytes)
+            self.wfile.write(doc_bytes)
 
         except Exception as e:
             print(f"MAIN ERROR: {e}")
             self.send_response(500)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            error_response = json.dumps({'error': 'An internal server error occurred while generating the file.'})
+            error_response = json.dumps({'error': 'An internal server error occurred.'})
             self.wfile.write(error_response.encode('utf-8'))
-        
-        finally:
-            # --- Clean up the temporary file ---
-            if os.path.exists(file_path):
-                os.remove(file_path)
         
         return
