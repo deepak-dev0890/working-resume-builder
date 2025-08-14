@@ -1,6 +1,5 @@
-# Ignore the virtual environment folder
 venv/
-
-# Ignore VS Code settings folder
-.vscode/
-.vercel
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
