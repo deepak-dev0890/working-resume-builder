@@ -1,4 +1,4 @@
-<!-- Complete, Final, and Working Code for Resume Builder v4.3 -->
+<!-- Complete, Final, and Working Code for Resume Builder v4.5 -->
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ATS Resume Builder</title>
 <style>
 :root { --primary-color: #0d47a1; --primary-text: #ffffff; --dark-text: #212121; --light-gray: #f5f5f5; --error-color: #b71c1c; --focus-outline: 2px solid #1976d2; --target-size: 44px; --border-color: #ccc; }
@@ -35,7 +35,7 @@ input.error, textarea.error { border-color: var(--error-color) !important; }
 </style>
 </head><body>
 <main id="main-content" class="resume-container">
-    <h1>ATS Resume Builder v4.4</h1>
+    <h1>ATS Resume Builder v4.5</h1>
     <p>Tick the confirmation checkbox at the bottom to enable the 'Generate Resume' button.</p>
     <div class="button-group">
         <button type="button" id="save-btn" class="action-btn">Save Progress</button>
@@ -48,7 +48,7 @@ input.error, textarea.error { border-color: var(--error-color) !important; }
         <div class="form-section"><h2>Work Experience</h2><div id="work-experience-container"></div><button type="button" id="add-work-btn" class="add-btn">+ Add Work Experience</button></div>
         <div class="form-section"><h2>Education</h2><div id="education-container"></div><button type="button" id="add-education-btn" class="add-btn">+ Add Education</button></div>
         <div class="form-section"><h2>Skills <span class="required-star">*</span></h2><div class="form-group"><label for="skills">Skills</label><textarea id="skills" name="skills" required maxlength="1000"></textarea><p class="helper-text">Enter skills separated by commas.</p><p class="error-message" role="alert"></p></div></div>
-        <div class="form-section"><h2>Options & Declaration</h2><div class="options-container"><div class="form-group"><label>Download Format</label><div class="radio-group"><input type="radio" id="format-all" name="format" value="all" checked><label for="format-all">Both</label></div><div class="radio-group"><input type="radio" id="format-pdf" name="format" value="pdf"><label for="format-pdf">PDF</label></div><div class="radio-group"><input type="radio" id="format-docx" name="format" value="docx"><label for="format-docx">Word</label></div></div><div class="form-group"><label for="accentColor">Accent Color</label><input type="color" id="accentColor" name="accentColor" value="#0d47a1"></div></div><div class="form-group"><div class="checkbox-group"><input type="checkbox" id="declaration" name="declaration" required><label for="declaration">I confirm the information provided is true. <span class="required-star">*</span></label></div><p class="error-message" id="declaration-error" role="alert"></p></div></div>
+        <div class="form-section"><h2>Options & Declaration</h2><div class="options-container"><div class="form-group"><label>Download Format</label><div class="radio-group"><input type="radio" id="format-docx" name="format" value="docx" checked><label for="format-docx">Word (DOCX)</label></div><div class="radio-group"><input type="radio" id="format-pdf" name="format" value="pdf"><label for="format-pdf">PDF</label></div></div></div><div class="form-group"><div class="checkbox-group"><input type="checkbox" id="declaration" name="declaration" required><label for="declaration">I confirm the information provided is true. <span class="required-star">*</span></label></div><p class="error-message" id="declaration-error" role="alert"></p></div></div>
         <div id="form-feedback" role="alert" aria-live="assertive"></div>
         <div class="button-group"><button type="button" id="clear-form-btn" class="clear-btn">Clear Form</button><button type="button" id="preview-btn" class="action-btn">Preview</button><button type="submit" id="submit-button" class="submit-btn" disabled>Generate Resume</button></div>
     </form>
@@ -57,33 +57,11 @@ input.error, textarea.error { border-color: var(--error-color) !important; }
 <template id="education-template"><div class="dynamic-entry education-entry"><button type="button" class="remove-btn" title="Remove this education entry">✖</button><div class="form-group"><label>Degree / Certificate</label><input type="text" name="degree" maxlength="150" list="degree-suggestions"></div><div class="form-group"><label>School / Institution</label><input type="text" name="school" maxlength="150"></div><div class="grid-container"><div class="form-group"><label>From</label><input type="month" name="dateFrom"></div><div class="form-group"><label>To</label><input type="month" name="dateTo"><div class="checkbox-group"><input type="checkbox" name="isPresent" class="present-checkbox"><label>I currently study here</label></div></div></div></div></template>
 <datalist id="degree-suggestions"><option value="High School Diploma"></option><option value="Associate of Arts (A.A.)"></option><option value="Bachelor of Science (B.S.)"></option><option value="Master of Business Administration (M.B.A.)"></option><option value="Doctor of Philosophy (Ph.D.)"></option></datalist>
 <div id="modal-overlay"><div id="preview-modal"><button id="modal-close" title="Close Preview">&times;</button><div id="preview-content"></div></div></div>
-<button onclick="generateResume('pdf')">Download PDF</button>
-<button onclick="generateResume('docx')">Download DOCX</button>
 <script>
-    async function generateResume(type) {
-    try {
-        const res = await fetch(`/api/generate?type=${type}`);
-        if (!res.ok) throw new Error("Failed to generate resume");
-
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `resume.${type}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        window.URL.revokeObjectURL(url);
-    } catch (err) {
-        alert("Error: " + err.message);
-    }
-}
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
     // --- CONFIGURATION ---
-    const BACKEND_URL = '/api/index'; // This is the correct, relative path for Vercel
+    const BACKEND_URL = '/api/generate';
 
     // --- ELEMENTS ---
     const form = document.getElementById('resume-form'); const submitButton = document.getElementById('submit-button');
@@ -131,13 +109,15 @@ document.addEventListener('DOMContentLoaded', function() {
         setLoadingState(true);
         fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getFormDataAsObject()) })
         .then(async response => {
-            if (!response.ok) { const errText = await response.text(); throw new Error(errText || 'An unknown server error occurred.'); }
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({error: 'An unknown server error occurred.'}));
+                throw new Error(err.error);
+            }
             const disposition = response.headers.get("content-disposition");
-            let filename = "resume.docx";
-            if (disposition && disposition.indexOf('attachment') !== -1) {
-                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                const matches = filenameRegex.exec(disposition);
-                if (matches != null && matches[1]) { filename = matches[1].replace(/['"]/g, ''); }
+            let filename = "resume.file";
+            if (disposition && disposition.includes('attachment')) {
+                const matches = /filename="([^"]+)"/.exec(disposition);
+                if (matches && matches[1]) filename = matches[1];
             }
             return response.blob().then(blob => downloadBlob(blob, filename));
         })
@@ -150,7 +130,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function getFormDataAsObject() { const data = {}; const formData = new FormData(form); for(const [key, value] of formData.entries()) { data[key] = value; } data.declaration = declarationCheckbox.checked; data.workExperiences = []; data.educations = []; document.querySelectorAll('.work-experience-entry').forEach(entry => { data.workExperiences.push({ jobTitle: entry.querySelector('[name="jobTitle"]').value, company: entry.querySelector('[name="company"]').value, location: entry.querySelector('[name="location"]').value, dateFrom: entry.querySelector('[name="dateFrom"]').value, dateTo: entry.querySelector('[name="dateTo"]').value, isPresent: entry.querySelector('[name="isPresent"]').checked, jobDescription: entry.querySelector('[name="jobDescription"]').value }); }); document.querySelectorAll('.education-entry').forEach(entry => { data.educations.push({ degree: entry.querySelector('[name="degree"]').value, school: entry.querySelector('[name="school"]').value, dateFrom: entry.querySelector('[name="dateFrom"]').value, dateTo: entry.querySelector('[name="dateTo"]').value, isPresent: entry.querySelector('[name="isPresent"]').checked }); }); return data; }
     function populateForm(data) { form.reset(); for(const key in data) { if(form.elements[key]) { if(form.elements[key].type === 'checkbox') { form.elements[key].checked = data[key]; } else if(form.elements[key].type === 'radio') { const radio = document.querySelector(`input[name="${key}"][value="${data[key]}"]`); if(radio) radio.checked = true;} else { form.elements[key].value = data[key]; } } } workContainer.innerHTML = ''; (data.workExperiences || []).forEach(job => { addWorkExperience(); const newEntry = workContainer.lastElementChild; for(const key in job) { const el = newEntry.querySelector(`[name=${key}]`); if(el){ if(el.type === 'checkbox') {el.checked = job[key]; const dateTo = newEntry.querySelector('[name=dateTo]'); if(dateTo){dateTo.disabled = el.checked;}} else {el.value = job[key];}} } }); educationContainer.innerHTML = ''; (data.educations || []).forEach(edu => { addEducation(); const newEntry = educationContainer.lastElementChild; for(const key in edu) { const el = newEntry.querySelector(`[name=${key}]`); if(el){ if(el.type === 'checkbox') {el.checked = edu[key]; const dateTo = newEntry.querySelector('[name=dateTo]'); if(dateTo){dateTo.disabled = el.checked;}} else {el.value = edu[key];}} } }); updateSubmitButtonState(); }
     function updateSubmitButtonState() { submitButton.disabled = !declarationCheckbox.checked; }
-    function isFormValid(showErrors) { let isValid = true; form.querySelectorAll('input[required], textarea[required]').forEach(input => { if (!input.value.trim()) { isValid = false; if (showErrors) showError(input, `This field is required.`); } }); return isValid; }
+    function isFormValid(showErrors) { let isValid = true; form.querySelectorAll('input[required]').forEach(input => { if (!input.value.trim()) { isValid = false; if (showErrors) showError(input, `This field is required.`); } }); return isValid; }
     function showError(el, msg) { el.classList.add('error'); const errEl = el.closest('.form-group, .checkbox-group').querySelector('.error-message'); if(errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } }
     function resetFormState() { form.querySelectorAll('.error').forEach(el => el.classList.remove('error')); form.querySelectorAll('.error-message').forEach(el => { el.style.display = 'none'; el.textContent = ''; }); formFeedback.className = ''; formFeedback.textContent = ''; }
     function setLoadingState(isLoading) { submitButton.disabled = isLoading; submitButton.innerHTML = isLoading ? 'Generating... <span class="loader"></span>' : 'Generate Resume'; if(!isLoading) { updateSubmitButtonState(); } }
@@ -163,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function showPreview() { if(!isFormValid(true)) { showGlobalError("Please fix errors before previewing."); return; } document.getElementById('preview-content').innerHTML = generatePreviewHtml(getFormDataAsObject()); modalOverlay.style.display = 'flex'; }
     function hidePreview() { modalOverlay.style.display = 'none'; }
     function generatePreviewHtml(data) { const s = (str) => str ? str.toString().replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>") : ''; let html = `<h3>${s(data.name)}</h3><p>${s(data.email)} | ${s(data.phone)} | ${s(data.linkedin)}</p>`; html += `<h3>Summary</h3><p>${s(data.summary)}</p>`; html += `<h3>Work Experience</h3>`; (data.workExperiences || []).forEach(job => { if(job.jobTitle) html += `<p style="margin-bottom:1em;"><b>${s(job.jobTitle)} | ${s(job.company)}</b><br>${s(job.location)}<br>${s(job.dateFrom)} - ${job.isPresent ? 'Present' : s(job.dateTo)}<br>${s(job.jobDescription)}</p>`; }); html += `<h3>Education</h3>`; (data.educations || []).forEach(edu => { if(edu.degree) html += `<p style="margin-bottom:1em;"><b>${s(edu.degree)} | ${s(edu.school)}</b><br>${s(edu.dateFrom)} - ${edu.isPresent ? 'Present' : s(edu.dateTo)}</p>`; }); html += `<h3>Skills</h3><ul>${s(data.skills).split(',').map(skill => skill.trim() ? `<li>${s(skill.trim())}</li>` : '').join('')}</ul>`; return html; }
-    function getExampleData() { return { name: "Jane Doe", email: "jane.doe@example.com", phone: "123-456-7890", linkedin: "https://linkedin.com/in/janedoe", summary: "A highly motivated and detail-oriented professional with 5 years of experience in project management and web development.", skills: "JavaScript, HTML, CSS, React, Project Management, Agile Methodologies", format: "all", accentColor: "#4a148c", declaration: true, workExperiences: [{ jobTitle: "Senior Web Developer", company: "Tech Solutions Inc.", location: "San Francisco, CA", dateFrom: "2021-01", dateTo: "", isPresent: true, jobDescription: "- Led a team of 5 developers in creating a new e-commerce platform.\n- Improved website performance by 30%." }], educations: [{ degree: "Bachelor of Science in Computer Science", school: "State University", dateFrom: "2012-08", dateTo: "2016-05", isPresent: false }] }; }
+    function getExampleData() { return { name: "Jane Doe", email: "jane.doe@example.com", phone: "123-456-7890", linkedin: "https://linkedin.com/in/janedoe", summary: "A highly motivated and detail-oriented professional with 5 years of experience in project management and web development.", skills: "JavaScript, HTML, CSS, React, Project Management, Agile Methodologies", format: "docx", declaration: true, workExperiences: [{ jobTitle: "Senior Web Developer", company: "Tech Solutions Inc.", location: "San Francisco, CA", dateFrom: "2021-01", dateTo: "", isPresent: true, jobDescription: "- Led a team of 5 developers in creating a new e-commerce platform.\n- Improved website performance by 30%." }], educations: [{ degree: "Bachelor of Science in Computer Science", school: "State University", dateFrom: "2012-08", dateTo: "2016-05", isPresent: false }] }; }
     
     // --- Start the application ---
     addWorkExperience();
@@ -172,4 +152,4 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSubmitButtonState();
 });
 </script>
-</body></html>
+</body></html>"
