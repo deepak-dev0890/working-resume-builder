@@ -1,3 +1,2 @@
 python-docx
 reportlab
-flask

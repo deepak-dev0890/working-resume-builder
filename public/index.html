@@ -1,4 +1,3 @@
-<!-- Complete, Final, and Working Code for Resume Builder v4.5 -->
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ATS Resume Builder</title>
 <style>
 :root { --primary-color: #0d47a1; --primary-text: #ffffff; --dark-text: #212121; --light-gray: #f5f5f5; --error-color: #b71c1c; --focus-outline: 2px solid #1976d2; --target-size: 44px; --border-color: #ccc; }
@@ -35,7 +34,7 @@ input.error, textarea.error { border-color: var(--error-color) !important; }
 </style>
 </head><body>
 <main id="main-content" class="resume-container">
-    <h1>ATS Resume Builder v4.5</h1>
+    <h1>ATS Resume Builder v4.6</h1>
     <p>Tick the confirmation checkbox at the bottom to enable the 'Generate Resume' button.</p>
     <div class="button-group">
         <button type="button" id="save-btn" class="action-btn">Save Progress</button>
@@ -48,7 +47,7 @@ input.error, textarea.error { border-color: var(--error-color) !important; }
         <div class="form-section"><h2>Work Experience</h2><div id="work-experience-container"></div><button type="button" id="add-work-btn" class="add-btn">+ Add Work Experience</button></div>
         <div class="form-section"><h2>Education</h2><div id="education-container"></div><button type="button" id="add-education-btn" class="add-btn">+ Add Education</button></div>
         <div class="form-section"><h2>Skills <span class="required-star">*</span></h2><div class="form-group"><label for="skills">Skills</label><textarea id="skills" name="skills" required maxlength="1000"></textarea><p class="helper-text">Enter skills separated by commas.</p><p class="error-message" role="alert"></p></div></div>
-        <div class="form-section"><h2>Options & Declaration</h2><div class="options-container"><div class="form-group"><label>Download Format</label><div class="radio-group"><input type="radio" id="format-docx" name="format" value="docx" checked><label for="format-docx">Word (DOCX)</label></div><div class="radio-group"><input type="radio" id="format-pdf" name="format" value="pdf"><label for="format-pdf">PDF</label></div></div></div><div class="form-group"><div class="checkbox-group"><input type="checkbox" id="declaration" name="declaration" required><label for="declaration">I confirm the information provided is true. <span class="required-star">*</span></label></div><p class="error-message" id="declaration-error" role="alert"></p></div></div>
+        <div class="form-section"><h2>Options & Declaration</h2><div class="options-container"><div class="form-group"><label>Download Format</label><div class="radio-group"><input type="radio" id="format-docx" name="format" value="docx" checked><label for="format-docx">Word (DOCX)</label></div><div class="radio-group"><input type="radio" id="format-pdf" name="format" value="pdf"><label for="format-pdf">PDF</label></div></div><div class="form-group"><label for="accentColor">Accent Color</label><input type="color" id="accentColor" name="accentColor" value="#0d47a1"></div></div><div class="form-group"><div class="checkbox-group"><input type="checkbox" id="declaration" name="declaration" required><label for="declaration">I confirm the information provided is true. <span class="required-star">*</span></label></div><p class="error-message" id="declaration-error" role="alert"></p></div></div>
         <div id="form-feedback" role="alert" aria-live="assertive"></div>
         <div class="button-group"><button type="button" id="clear-form-btn" class="clear-btn">Clear Form</button><button type="button" id="preview-btn" class="action-btn">Preview</button><button type="submit" id="submit-button" class="submit-btn" disabled>Generate Resume</button></div>
     </form>
@@ -60,10 +59,7 @@ input.error, textarea.error { border-color: var(--error-color) !important; }
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     'use strict';
-    // --- CONFIGURATION ---
     const BACKEND_URL = '/api/generate';
-
-    // --- ELEMENTS ---
     const form = document.getElementById('resume-form'); const submitButton = document.getElementById('submit-button');
     const addWorkBtn = document.getElementById('add-work-btn'); const addEducationBtn = document.getElementById('add-education-btn');
     const workContainer = document.getElementById('work-experience-container'); const educationContainer = document.getElementById('education-container');
@@ -73,7 +69,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalOverlay = document.getElementById('modal-overlay'); const modalClose = document.getElementById('modal-close');
     const declarationCheckbox = document.getElementById('declaration');
 
-    // --- EVENT LISTENERS ---
     function setupEventListeners() {
         addWorkBtn.addEventListener('click', addWorkExperience);
         addEducationBtn.addEventListener('click', addEducation);
@@ -88,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function() {
         modalClose.addEventListener('click', hidePreview);
     }
     
-    // --- DYNAMIC SECTIONS ---
     function addDynamicEntry(templateId, container) {
         const template = document.getElementById(templateId);
         const clone = template.content.cloneNode(true);
@@ -102,7 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function addWorkExperience() { addDynamicEntry('work-experience-template', workContainer); }
     function addEducation() { addDynamicEntry('education-template', educationContainer); }
 
-    // --- FORM SUBMISSION ---
     function handleFormSubmit(event) {
         event.preventDefault(); resetFormState();
         if (!isFormValid(true)) { showGlobalError('Please fill all required fields.'); return; }
@@ -126,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .finally(() => setLoadingState(false));
     }
 
-    // --- DATA HANDLING & UI ---
     function getFormDataAsObject() { const data = {}; const formData = new FormData(form); for(const [key, value] of formData.entries()) { data[key] = value; } data.declaration = declarationCheckbox.checked; data.workExperiences = []; data.educations = []; document.querySelectorAll('.work-experience-entry').forEach(entry => { data.workExperiences.push({ jobTitle: entry.querySelector('[name="jobTitle"]').value, company: entry.querySelector('[name="company"]').value, location: entry.querySelector('[name="location"]').value, dateFrom: entry.querySelector('[name="dateFrom"]').value, dateTo: entry.querySelector('[name="dateTo"]').value, isPresent: entry.querySelector('[name="isPresent"]').checked, jobDescription: entry.querySelector('[name="jobDescription"]').value }); }); document.querySelectorAll('.education-entry').forEach(entry => { data.educations.push({ degree: entry.querySelector('[name="degree"]').value, school: entry.querySelector('[name="school"]').value, dateFrom: entry.querySelector('[name="dateFrom"]').value, dateTo: entry.querySelector('[name="dateTo"]').value, isPresent: entry.querySelector('[name="isPresent"]').checked }); }); return data; }
     function populateForm(data) { form.reset(); for(const key in data) { if(form.elements[key]) { if(form.elements[key].type === 'checkbox') { form.elements[key].checked = data[key]; } else if(form.elements[key].type === 'radio') { const radio = document.querySelector(`input[name="${key}"][value="${data[key]}"]`); if(radio) radio.checked = true;} else { form.elements[key].value = data[key]; } } } workContainer.innerHTML = ''; (data.workExperiences || []).forEach(job => { addWorkExperience(); const newEntry = workContainer.lastElementChild; for(const key in job) { const el = newEntry.querySelector(`[name=${key}]`); if(el){ if(el.type === 'checkbox') {el.checked = job[key]; const dateTo = newEntry.querySelector('[name=dateTo]'); if(dateTo){dateTo.disabled = el.checked;}} else {el.value = job[key];}} } }); educationContainer.innerHTML = ''; (data.educations || []).forEach(edu => { addEducation(); const newEntry = educationContainer.lastElementChild; for(const key in edu) { const el = newEntry.querySelector(`[name=${key}]`); if(el){ if(el.type === 'checkbox') {el.checked = edu[key]; const dateTo = newEntry.querySelector('[name=dateTo]'); if(dateTo){dateTo.disabled = el.checked;}} else {el.value = edu[key];}} } }); updateSubmitButtonState(); }
     function updateSubmitButtonState() { submitButton.disabled = !declarationCheckbox.checked; }
@@ -151,29 +143,5 @@ document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     updateSubmitButtonState();
 });
-function downloadFile(type) {
-    const text = "This is a custom file with a table!";
-    const table = [
-        ["Name", "Role", "Location"],
-        ["Deepak", "BIM Specialist", "Singapore"],
-        ["Sakshi", "Designer", "India"]
-    ];
-
-    fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, text, table })
-    })
-    .then(res => res.blob())
-    .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `generated.${type}`;
-        a.click();
-        window.URL.revokeObjectURL(url);
-    });
-}
-
 </script>
 </body></html>
