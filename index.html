@@ -1,0 +1,153 @@
+<!-- Complete, Final, and Working Code for Resume Builder v4.3 -->
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ATS Resume Builder</title>
+<style>
+:root { --primary-color: #0d47a1; --primary-text: #ffffff; --dark-text: #212121; --light-gray: #f5f5f5; --error-color: #b71c1c; --focus-outline: 2px solid #1976d2; --target-size: 44px; --border-color: #ccc; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: var(--dark-text); background-color: #fff; margin: 0; padding: 1rem; }
+.resume-container { max-width: 800px; margin: 2rem auto; padding: 2rem; background: var(--light-gray); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+h1, h2, #preview-modal h3 { border-bottom: 2px solid #e0e0e0; padding-bottom: 0.5rem; color: var(--primary-color); }
+.form-section { margin-bottom: 2rem; border-left: 3px solid var(--primary-color); padding-left: 1.5rem; }
+.dynamic-entry { border: 1px solid #e0e0e0; padding: 1rem 1rem 1.5rem; margin-top: 1rem; border-radius: 4px; background: #fff; position: relative; }
+.grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.button-group { display:flex; flex-wrap: wrap; gap: 1rem; margin-top: 2rem; }
+.form-group { margin-bottom: 1.5rem; }
+label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
+.required-star { color: var(--error-color); }
+input[type="text"], input[type="email"], input[type="tel"], input[type="url"], input[type="month"], textarea, select { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; min-height: var(--target-size); }
+.add-btn, .remove-btn, .clear-btn, .action-btn { padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 0.5rem; }
+.add-btn { border: 1px solid var(--primary-color); background: #fff; color: var(--primary-color); }
+.clear-btn, .action-btn { border: 1px solid #6c757d; background: transparent; color: #6c757d; }
+.remove-btn { border: 1px solid var(--error-color); background: transparent; color: var(--error-color); position: absolute; top: 1rem; right: 1rem; }
+.submit-btn { display: block; width: 100%; padding: 1rem; background-color: var(--primary-color); color: var(--primary-text); border: none; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; min-height: var(--target-size); transition: background-color 0.2s; }
+.submit-btn:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+.error-message { color: var(--error-color); font-weight: bold; font-size: 0.9rem; margin-top: 0.25rem; display: none; }
+input.error, textarea.error { border-color: var(--error-color) !important; }
+#form-feedback { margin-top: 1.5rem; padding: 1rem; border-radius: 4px; font-weight: bold; display: none; }
+#form-feedback.success { background-color: #e8f5e9; color: #2e7d32; display: block; }
+#form-feedback.error { background-color: #ffebee; color: var(--error-color); display: block; }
+#modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; display: none; align-items: center; justify-content: center; }
+#preview-modal { background: #fff; padding: 2rem; border-radius: 8px; z-index: 101; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; position:relative;}
+#modal-close { position: absolute; top: 1rem; right: 1rem; font-size: 1.5rem; font-weight: bold; cursor: pointer; border: none; background: none; }
+#preview-content { font-family: 'Times New Roman', Times, serif; color: #333; }
+#preview-content h3 { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+#preview-content ul { padding-left: 20px; list-style-type: disc; }
+.loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-left: 10px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head><body>
+<main id="main-content" class="resume-container">
+    <h1>ATS Resume Builder v4.3</h1>
+    <p>Tick the confirmation checkbox at the bottom to enable the 'Generate Resume' button.</p>
+    <div class="button-group">
+        <button type="button" id="save-btn" class="action-btn">Save Progress</button>
+        <button type="button" id="load-btn" class="action-btn">Load Progress</button>
+        <button type="button" id="example-btn" class="action-btn">Fill with Example</button>
+    </div>
+    <form id="resume-form" novalidate>
+        <div class="form-section"><h2>Personal Details</h2><div class="form-group"><label for="name">Full Name <span class="required-star">*</span></label><input type="text" id="name" name="name" required maxlength="100"><p class="error-message" role="alert"></p></div><div class="grid-container"><div class="form-group"><label for="email">Email Address <span class="required-star">*</span></label><input type="email" id="email" name="email" required maxlength="100"><p class="error-message" role="alert"></p></div><div class="form-group"><label for="phone">Phone Number <span class="required-star">*</span></label><input type="tel" id="phone" name="phone" required maxlength="30"><p class="error-message" role="alert"></p></div></div><div class="form-group"><label for="linkedin">LinkedIn Profile URL</label><input type="url" id="linkedin" name="linkedin" maxlength="200" placeholder="https://www.linkedin.com/in/yourname"></div></div>
+        <div class="form-section"><h2>Professional Summary</h2><div class="form-group"><label for="summary">Summary</label><textarea id="summary" name="summary" maxlength="2000"></textarea><div class="char-counter">0 / 2000</div><p class="error-message" role="alert"></p></div></div>
+        <div class="form-section"><h2>Work Experience</h2><div id="work-experience-container"></div><button type="button" id="add-work-btn" class="add-btn">+ Add Work Experience</button></div>
+        <div class="form-section"><h2>Education</h2><div id="education-container"></div><button type="button" id="add-education-btn" class="add-btn">+ Add Education</button></div>
+        <div class="form-section"><h2>Skills <span class="required-star">*</span></h2><div class="form-group"><label for="skills">Skills</label><textarea id="skills" name="skills" required maxlength="1000"></textarea><p class="helper-text">Enter skills separated by commas.</p><p class="error-message" role="alert"></p></div></div>
+        <div class="form-section"><h2>Options & Declaration</h2><div class="options-container"><div class="form-group"><label>Download Format</label><div class="radio-group"><input type="radio" id="format-all" name="format" value="all" checked><label for="format-all">Both</label></div><div class="radio-group"><input type="radio" id="format-pdf" name="format" value="pdf"><label for="format-pdf">PDF</label></div><div class="radio-group"><input type="radio" id="format-docx" name="format" value="docx"><label for="format-docx">Word</label></div></div><div class="form-group"><label for="accentColor">Accent Color</label><input type="color" id="accentColor" name="accentColor" value="#0d47a1"></div></div><div class="form-group"><div class="checkbox-group"><input type="checkbox" id="declaration" name="declaration" required><label for="declaration">I confirm the information provided is true. <span class="required-star">*</span></label></div><p class="error-message" id="declaration-error" role="alert"></p></div></div>
+        <div id="form-feedback" role="alert" aria-live="assertive"></div>
+        <div class="button-group"><button type="button" id="clear-form-btn" class="clear-btn">Clear Form</button><button type="button" id="preview-btn" class="action-btn">Preview</button><button type="submit" id="submit-button" class="submit-btn" disabled>Generate Resume</button></div>
+    </form>
+</main>
+<template id="work-experience-template"><div class="dynamic-entry work-experience-entry"><button type="button" class="remove-btn" title="Remove this work experience">✖</button><div class="grid-container"><div class="form-group"><label>Job Title</label><input type="text" name="jobTitle" maxlength="100"></div><div class="form-group"><label>Company</label><input type="text" name="company" maxlength="100"></div></div><div class="form-group"><label>Location</label><input type="text" name="location" maxlength="100" placeholder="e.g. City, Country"></div><div class="grid-container"><div class="form-group"><label>From</label><input type="month" name="dateFrom"></div><div class="form-group"><label>To</label><input type="month" name="dateTo"><div class="checkbox-group"><input type="checkbox" name="isPresent" class="present-checkbox"><label>I currently work here</label></div></div></div><div class="form-group"><label>Description</label><textarea name="jobDescription" maxlength="2000" placeholder="Start each accomplishment on a new line."></textarea><div class="char-counter">0 / 2000</div></div></div></template>
+<template id="education-template"><div class="dynamic-entry education-entry"><button type="button" class="remove-btn" title="Remove this education entry">✖</button><div class="form-group"><label>Degree / Certificate</label><input type="text" name="degree" maxlength="150" list="degree-suggestions"></div><div class="form-group"><label>School / Institution</label><input type="text" name="school" maxlength="150"></div><div class="grid-container"><div class="form-group"><label>From</label><input type="month" name="dateFrom"></div><div class="form-group"><label>To</label><input type="month" name="dateTo"><div class="checkbox-group"><input type="checkbox" name="isPresent" class="present-checkbox"><label>I currently study here</label></div></div></div></div></template>
+<datalist id="degree-suggestions"><option value="High School Diploma"></option><option value="Associate of Arts (A.A.)"></option><option value="Bachelor of Science (B.S.)"></option><option value="Master of Business Administration (M.B.A.)"></option><option value="Doctor of Philosophy (Ph.D.)"></option></datalist>
+<div id="modal-overlay"><div id="preview-modal"><button id="modal-close" title="Close Preview">&times;</button><div id="preview-content"></div></div></div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    'use strict';
+    // --- CONFIGURATION ---
+    const BACKEND_URL = '/api/index'; // This is the correct, relative path for Vercel
+
+    // --- ELEMENTS ---
+    const form = document.getElementById('resume-form'); const submitButton = document.getElementById('submit-button');
+    const addWorkBtn = document.getElementById('add-work-btn'); const addEducationBtn = document.getElementById('add-education-btn');
+    const workContainer = document.getElementById('work-experience-container'); const educationContainer = document.getElementById('education-container');
+    const clearFormBtn = document.getElementById('clear-form-btn'); const formFeedback = document.getElementById('form-feedback');
+    const saveBtn = document.getElementById('save-btn'); const loadBtn = document.getElementById('load-btn');
+    const exampleBtn = document.getElementById('example-btn'); const previewBtn = document.getElementById('preview-btn');
+    const modalOverlay = document.getElementById('modal-overlay'); const modalClose = document.getElementById('modal-close');
+    const declarationCheckbox = document.getElementById('declaration');
+
+    // --- EVENT LISTENERS ---
+    function setupEventListeners() {
+        addWorkBtn.addEventListener('click', addWorkExperience);
+        addEducationBtn.addEventListener('click', addEducation);
+        form.addEventListener('submit', handleFormSubmit);
+        declarationCheckbox.addEventListener('change', updateSubmitButtonState);
+        clearFormBtn.addEventListener('click', () => { if(confirm("Are you sure? This will erase all fields.")) { form.reset(); workContainer.innerHTML = ''; educationContainer.innerHTML = ''; addWorkExperience(); addEducation(); resetFormState(); updateSubmitButtonState(); } });
+        saveBtn.addEventListener('click', saveData);
+        loadBtn.addEventListener('click', loadData);
+        exampleBtn.addEventListener('click', fillWithExample);
+        previewBtn.addEventListener('click', showPreview);
+        modalOverlay.addEventListener('click', hidePreview);
+        modalClose.addEventListener('click', hidePreview);
+    }
+    
+    // --- DYNAMIC SECTIONS ---
+    function addDynamicEntry(templateId, container) {
+        const template = document.getElementById(templateId);
+        const clone = template.content.cloneNode(true);
+        clone.querySelector('.remove-btn').addEventListener('click', (e) => e.target.closest('.dynamic-entry').remove());
+        clone.querySelector('.present-checkbox').addEventListener('change', (e) => {
+            const dateToInput = e.target.closest('.dynamic-entry').querySelector('[name="dateTo"]');
+            if(dateToInput) { dateToInput.disabled = e.target.checked; if(e.target.checked) dateToInput.value = ''; }
+        });
+        container.appendChild(clone);
+    }
+    function addWorkExperience() { addDynamicEntry('work-experience-template', workContainer); }
+    function addEducation() { addDynamicEntry('education-template', educationContainer); }
+
+    // --- FORM SUBMISSION ---
+    function handleFormSubmit(event) {
+        event.preventDefault(); resetFormState();
+        if (!isFormValid(true)) { showGlobalError('Please fill all required fields.'); return; }
+        setLoadingState(true);
+        fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getFormDataAsObject()) })
+        .then(async response => {
+            if (!response.ok) { const errText = await response.text(); throw new Error(errText || 'An unknown server error occurred.'); }
+            const disposition = response.headers.get("content-disposition");
+            let filename = "resume.docx";
+            if (disposition && disposition.indexOf('attachment') !== -1) {
+                const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                const matches = filenameRegex.exec(disposition);
+                if (matches != null && matches[1]) { filename = matches[1].replace(/['"]/g, ''); }
+            }
+            return response.blob().then(blob => downloadBlob(blob, filename));
+        })
+        .then(() => showGlobalSuccess('Success! Your resume is downloading.'))
+        .catch(err => { showGlobalError(`Error: ${err.message}`); })
+        .finally(() => setLoadingState(false));
+    }
+
+    // --- DATA HANDLING & UI ---
+    function getFormDataAsObject() { const data = {}; const formData = new FormData(form); for(const [key, value] of formData.entries()) { data[key] = value; } data.declaration = declarationCheckbox.checked; data.workExperiences = []; data.educations = []; document.querySelectorAll('.work-experience-entry').forEach(entry => { data.workExperiences.push({ jobTitle: entry.querySelector('[name="jobTitle"]').value, company: entry.querySelector('[name="company"]').value, location: entry.querySelector('[name="location"]').value, dateFrom: entry.querySelector('[name="dateFrom"]').value, dateTo: entry.querySelector('[name="dateTo"]').value, isPresent: entry.querySelector('[name="isPresent"]').checked, jobDescription: entry.querySelector('[name="jobDescription"]').value }); }); document.querySelectorAll('.education-entry').forEach(entry => { data.educations.push({ degree: entry.querySelector('[name="degree"]').value, school: entry.querySelector('[name="school"]').value, dateFrom: entry.querySelector('[name="dateFrom"]').value, dateTo: entry.querySelector('[name="dateTo"]').value, isPresent: entry.querySelector('[name="isPresent"]').checked }); }); return data; }
+    function populateForm(data) { form.reset(); for(const key in data) { if(form.elements[key]) { if(form.elements[key].type === 'checkbox') { form.elements[key].checked = data[key]; } else if(form.elements[key].type === 'radio') { const radio = document.querySelector(`input[name="${key}"][value="${data[key]}"]`); if(radio) radio.checked = true;} else { form.elements[key].value = data[key]; } } } workContainer.innerHTML = ''; (data.workExperiences || []).forEach(job => { addWorkExperience(); const newEntry = workContainer.lastElementChild; for(const key in job) { const el = newEntry.querySelector(`[name=${key}]`); if(el){ if(el.type === 'checkbox') {el.checked = job[key]; const dateTo = newEntry.querySelector('[name=dateTo]'); if(dateTo){dateTo.disabled = el.checked;}} else {el.value = job[key];}} } }); educationContainer.innerHTML = ''; (data.educations || []).forEach(edu => { addEducation(); const newEntry = educationContainer.lastElementChild; for(const key in edu) { const el = newEntry.querySelector(`[name=${key}]`); if(el){ if(el.type === 'checkbox') {el.checked = edu[key]; const dateTo = newEntry.querySelector('[name=dateTo]'); if(dateTo){dateTo.disabled = el.checked;}} else {el.value = edu[key];}} } }); updateSubmitButtonState(); }
+    function updateSubmitButtonState() { submitButton.disabled = !declarationCheckbox.checked; }
+    function isFormValid(showErrors) { let isValid = true; form.querySelectorAll('input[required], textarea[required]').forEach(input => { if (!input.value.trim()) { isValid = false; if (showErrors) showError(input, `This field is required.`); } }); return isValid; }
+    function showError(el, msg) { el.classList.add('error'); const errEl = el.closest('.form-group, .checkbox-group').querySelector('.error-message'); if(errEl) { errEl.textContent = msg; errEl.style.display = 'block'; } }
+    function resetFormState() { form.querySelectorAll('.error').forEach(el => el.classList.remove('error')); form.querySelectorAll('.error-message').forEach(el => { el.style.display = 'none'; el.textContent = ''; }); formFeedback.className = ''; formFeedback.textContent = ''; }
+    function setLoadingState(isLoading) { submitButton.disabled = isLoading; submitButton.innerHTML = isLoading ? 'Generating... <span class="loader"></span>' : 'Generate Resume'; if(!isLoading) { updateSubmitButtonState(); } }
+    function showGlobalError(msg) { const el = formFeedback; el.textContent = msg; el.className = 'error'; }
+    function showGlobalSuccess(msg) { const el = formFeedback; el.textContent = msg; el.className = 'success'; }
+    function downloadBlob(blob, filename) { const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.style.display = 'none'; a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url); }
+    function saveData() { localStorage.setItem('resumeDataV4.3', JSON.stringify(getFormDataAsObject())); alert("Progress Saved!"); }
+    function loadData() { const savedData = localStorage.getItem('resumeDataV4.3'); if (savedData) { if (confirm("Load saved data? This will overwrite current fields.")) { populateForm(JSON.parse(savedData)); } } else { alert("No saved data found."); } }
+    function fillWithExample() { if(confirm("Fill form with example data? This will overwrite current fields.")) { populateForm(getExampleData()); } }
+    function showPreview() { if(!isFormValid(true)) { showGlobalError("Please fix errors before previewing."); return; } document.getElementById('preview-content').innerHTML = generatePreviewHtml(getFormDataAsObject()); modalOverlay.style.display = 'flex'; }
+    function hidePreview() { modalOverlay.style.display = 'none'; }
+    function generatePreviewHtml(data) { const s = (str) => str ? str.toString().replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>") : ''; let html = `<h3>${s(data.name)}</h3><p>${s(data.email)} | ${s(data.phone)} | ${s(data.linkedin)}</p>`; html += `<h3>Summary</h3><p>${s(data.summary)}</p>`; html += `<h3>Work Experience</h3>`; (data.workExperiences || []).forEach(job => { if(job.jobTitle) html += `<p style="margin-bottom:1em;"><b>${s(job.jobTitle)} | ${s(job.company)}</b><br>${s(job.location)}<br>${s(job.dateFrom)} - ${job.isPresent ? 'Present' : s(job.dateTo)}<br>${s(job.jobDescription)}</p>`; }); html += `<h3>Education</h3>`; (data.educations || []).forEach(edu => { if(edu.degree) html += `<p style="margin-bottom:1em;"><b>${s(edu.degree)} | ${s(edu.school)}</b><br>${s(edu.dateFrom)} - ${edu.isPresent ? 'Present' : s(edu.dateTo)}</p>`; }); html += `<h3>Skills</h3><ul>${s(data.skills).split(',').map(skill => skill.trim() ? `<li>${s(skill.trim())}</li>` : '').join('')}</ul>`; return html; }
+    function getExampleData() { return { name: "Jane Doe", email: "jane.doe@example.com", phone: "123-456-7890", linkedin: "https://linkedin.com/in/janedoe", summary: "A highly motivated and detail-oriented professional with 5 years of experience in project management and web development.", skills: "JavaScript, HTML, CSS, React, Project Management, Agile Methodologies", format: "all", accentColor: "#4a148c", declaration: true, workExperiences: [{ jobTitle: "Senior Web Developer", company: "Tech Solutions Inc.", location: "San Francisco, CA", dateFrom: "2021-01", dateTo: "", isPresent: true, jobDescription: "- Led a team of 5 developers in creating a new e-commerce platform.\n- Improved website performance by 30%." }], educations: [{ degree: "Bachelor of Science in Computer Science", school: "State University", dateFrom: "2012-08", dateTo: "2016-05", isPresent: false }] }; }
+    
+    // --- Start the application ---
+    addWorkExperience();
+    addEducation();
+    setupEventListeners();
+    updateSubmitButtonState();
+});
+</script>
+</body></html>
